@@ -1,0 +1,150 @@
+def get_astropay_status():
+    try:
+        response = requests.get(
+            "https://status.astropay.com/api/v2/status.json", timeout=5)
+
+        data = response.json()
+        description = data["status"]["description"]
+        indicator = data["status"]["indicator"]
+
+        emoji = {
+            "none": "🟢",
+            "minor": "🟡",
+            "major": "🔴",
+            "critical": "❌"
+        }.get(indicator, "❓")
+
+        return f"{emoji} *AstroPay*: {description}"
+    except Exception as e:
+        return f"⚠️ *AstroPay*: Error ({e})"
+
+
+def get_kushki_status():
+    try:
+        response = requests.get(
+            "https://status.kushkipagos.com/api/v2/status.json", timeout=5)
+
+        data = response.json()
+        description = data["status"]["description"]
+        indicator = data["status"]["indicator"]
+
+        emoji = {
+            "none": "🟢",
+            "minor": "🟡",
+            "major": "🔴",
+            "critical": "❌"
+        }.get(indicator, "❓")
+
+        return f"{emoji} *Kushki*: {description}"
+    except Exception as e:
+        return f"⚠️ *Kushki*: Error ({e})"
+
+
+def get_transbank_status():
+    try:
+        response = requests.get(
+            "https://status.transbankdevelopers.cl/api/v2/components.json", timeout=5)
+
+        data = response.json()
+        components = data.get("components", [])
+
+        webpay_components = [c for c in components if "Webpay" in c["name"]]
+
+        if not webpay_components:
+            return "❓ *WebPay*: No encontrado"
+
+        status_map = {
+            "operational": "🟢",
+            "degraded_performance": "🟡",
+            "partial_outage": "🟠",
+            "major_outage": "🔴"
+        }
+
+        statuses = []
+        for comp in webpay_components:
+            emoji = status_map.get(comp["status"], "❓")
+            statuses.append(f"{emoji} {comp['name']}")
+
+        return "\n".join(statuses)
+    except Exception as e:
+        return f"⚠️ *WebPay*: Error ({e})"
+
+
+def get_mach_status():
+    try:
+        response = requests.get(
+            "https://mach.statuspage.io/api/v2/status.json", timeout=5)
+
+        data = response.json()
+        description = data["status"]["description"]
+        indicator = data["status"]["indicator"]
+
+        emoji = {
+            "none": "🟢",
+            "minor": "🟡",
+            "major": "🔴",
+            "critical": "❌",
+            "maintenance": "🟠"
+        }.get(indicator, "❓")
+
+        return f"{emoji} *MACH*: {description}"
+    except Exception as e:
+        return f"⚠️ *MACH*: Error ({e})"
+
+
+def get_mercadopago_status():
+    try:
+        response = requests.get(
+            "https://mercadopago.statuspage.io/api/v2/status.json", timeout=5)
+
+        data = response.json()
+        description = data["status"]["description"]
+        indicator = data["status"]["indicator"]
+
+        emoji = {
+            "none": "🟢",
+            "minor": "🟡",
+            "major": "🔴",
+            "critical": "❌"
+        }.get(indicator, "❓")
+
+        return f"{emoji} *MercadoPago*: {description}"
+    except Exception as e:
+        return f"⚠️ *MercadoPago*: Error ({e})"
+
+
+def get_skinsback_status():
+    try:
+        response = requests.get("https://skinsback.com", timeout=5)
+        return "🟢 *Skinsback*: Activo" if response.status_code == 200 else f"🔴 HTTP {response.status_code}"
+    except Exception as e:
+        return f"⚠️ *Skinsback*: Error ({e})"
+
+
+def get_coinpaid_status():
+    try:
+        response = requests.get(
+            "https://app.cryptoprocessing.com/api/v2/ping", timeout=5)
+
+        return "🟢 *CoinPaid*: Activo" if response.status_code == 200 else f"🔴 HTTP {response.status_code}"
+    except Exception as e:
+        return f"⚠️ *CoinPaid*: Error ({e})"
+
+
+@client.on(events.NewMessage(pattern=r'^/servicios$', chats=allowed_groups))
+async def check_services_status(event):
+
+    statuses = [
+        get_astropay_status(),
+        get_kushki_status(),
+        get_transbank_status(),
+        get_mach_status(),
+        get_mercadopago_status(),
+        get_skinsback_status(),
+        get_coinpaid_status()
+    ]
+
+    message = "**Estado actual de servicios:**\n\n" + "\n".join(statuses)
+
+    await client.send_message(event.chat_id, message, parse_mode='Markdown')
+

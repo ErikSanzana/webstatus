@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estado de Pasarelas de Pago</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 class="title">Estado de Pasarelas de Pago</h1>
+            <p class="subtitle">Monitoreo en tiempo real de servicios de pago</p>
+            <div class="last-update">
+                <span class="update-label">Última actualización:</span>
+                <span class="update-time" id="lastUpdate">--:--:--</span>
+            </div>
+        </header>
+
+        <div class="services-grid" id="servicesGrid">
+            <!-- Las tarjetas de servicios se generarán dinámicamente -->
+        </div>
+
+        <div class="controls">
+            <button class="refresh-btn" id="refreshBtn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M23 4v6h-6"></path>
+                    <path d="M1 20v-6h6"></path>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+                Actualizar
+            </button>
+            <div class="auto-refresh">
+                <label class="switch">
+                    <input type="checkbox" id="autoRefresh" checked>
+                    <span class="slider"></span>
+                </label>
+                <span class="auto-refresh-label">Auto-refresh (30s)</span>
+            </div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <span class="legend-dot operational"></span>
+                <span>Operativo</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-dot minor"></span>
+                <span>Problemas menores</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-dot major"></span>
+                <span>Problemas mayores</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-dot critical"></span>
+                <span>Crítico</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-dot maintenance"></span>
+                <span>Mantenimiento</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
