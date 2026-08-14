@@ -12,7 +12,7 @@
  */
 
 // URL del Cloudflare Worker (reemplaza con tu URL real después de desplegar)
-const WORKER_URL = 'https://payment-status-worker.ersanzana.workers.dev';
+const WORKER_URL = 'https://webstatus.ersanzana.workers.dev';
 
 const statusLabels = {
     operational: 'Operativo',
