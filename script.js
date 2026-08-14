@@ -7,87 +7,12 @@
  * 
  * Prohibida la copia, distribución o modificación
  * sin autorización escrita del autor.
+ * 
+ * Versión frontend - Se conecta a Cloudflare Worker
  */
 
-// Lista de proxies CORS para probar automáticamente
-const corsProxies = [
-    'https://corsproxy.io/?',
-    'https://api.allorigins.win/raw?url=',
-    'https://cors-anywhere.herokuapp.com/',
-    'https://thingproxy.freeboard.io/fetch/'
-];
-
-// Función para probar proxies automáticamente
-async function getWorkingProxy(targetUrl) {
-    for (const proxy of corsProxies) {
-        try {
-            const proxyUrl = proxy + encodeURIComponent(targetUrl);
-            const response = await fetch(proxyUrl, { 
-                method: 'HEAD',
-                signal: AbortSignal.timeout(5000)
-            });
-            
-            if (response.ok || response.status === 200) {
-                return proxy;
-            }
-        } catch (e) {
-            continue; // Probar siguiente proxy
-        }
-    }
-    return corsProxies[0]; // Fallback al primer proxy
-}
-
-const services = [
-    {
-        name: 'AstroPay',
-        url: 'https://status.astropay.com/api/v2/status.json',
-        type: 'statuspage'
-    },
-    {
-        name: 'Kushki',
-        url: 'https://status.kushkipagos.com/api/v2/status.json',
-        type: 'statuspage'
-    },
-    {
-        name: 'WebPay',
-        url: 'https://status.transbankdevelopers.cl/api/v2/components.json',
-        type: 'components'
-    },
-    {
-        name: 'MACH',
-        url: 'https://mach.statuspage.io/api/v2/status.json',
-        type: 'statuspage'
-    },
-    {
-        name: 'MercadoPago',
-        url: 'https://mercadopago.statuspage.io/api/v2/status.json',
-        type: 'statuspage'
-    },
-    {
-        name: 'Skinsback',
-        originalUrl: 'https://skinsback.com',
-        type: 'http',
-        useProxy: true
-    },
-    {
-        name: 'CoinPaid',
-        originalUrl: 'https://app.cryptoprocessing.com/api/v2/ping',
-        type: 'http',
-        useProxy: true
-    }
-];
-
-const statusMap = {
-    none: 'operational',
-    minor: 'minor',
-    major: 'major',
-    critical: 'critical',
-    maintenance: 'maintenance',
-    operational: 'operational',
-    degraded_performance: 'minor',
-    partial_outage: 'major',
-    major_outage: 'critical'
-};
+// URL del Cloudflare Worker (reemplaza con tu URL real después de desplegar)
+const WORKER_URL = 'https://payment-status-worker.ersanzana.workers.dev';
 
 const statusLabels = {
     operational: 'Operativo',
@@ -98,130 +23,19 @@ const statusLabels = {
     error: 'Error'
 };
 
-async function checkService(service) {
+async function fetchServicesStatus() {
     try {
-        let targetUrl = service.url;
+        const response = await fetch(WORKER_URL);
+        const data = await response.json();
         
-        // Si el servicio necesita proxy, obtener uno que funcione
-        if (service.useProxy && service.originalUrl) {
-            const workingProxy = await getWorkingProxy(service.originalUrl);
-            targetUrl = workingProxy + encodeURIComponent(service.originalUrl);
-        }
-
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-        const response = await fetch(targetUrl, {
-            signal: controller.signal,
-            mode: 'cors'
-        });
-        clearTimeout(timeoutId);
-
-        if (service.type === 'statuspage') {
-            const data = await response.json();
-            const indicator = data.status?.indicator;
-            const description = data.status?.description;
-            
-            return {
-                name: service.name,
-                status: statusMap[indicator] || 'error',
-                description: description || 'Estado desconocido',
-                responseTime: performance.now()
-            };
-        } else if (service.type === 'components') {
-            const data = await response.json();
-            const components = data.components || [];
-            const webpayComponents = components.filter(c => c.name.includes('Webpay'));
-            
-            if (webpayComponents.length === 0) {
-                return {
-                    name: service.name,
-                    status: 'error',
-                    description: 'No encontrado',
-                    responseTime: performance.now()
-                };
-            }
-
-            const statuses = webpayComponents.map(comp => ({
-                name: comp.name,
-                status: statusMap[comp.status] || 'error'
-            }));
-
-            const overallStatus = statuses.some(s => s.status === 'critical') ? 'critical' :
-                                  statuses.some(s => s.status === 'major') ? 'major' :
-                                  statuses.some(s => s.status === 'minor') ? 'minor' : 'operational';
-
-            return {
-                name: service.name,
-                status: overallStatus,
-                description: statuses.map(s => `${s.name}: ${statusLabels[s.status]}`).join(', '),
-                details: statuses,
-                responseTime: performance.now()
-            };
-        } else if (service.type === 'http') {
-            // Para servicios que usan proxy CORS, verificamos el contenido de la respuesta
-            const text = await response.text();
-            
-            // Si el proxy funciona pero el servicio original falla
-            if (response.ok && text.length > 0) {
-                return {
-                    name: service.name,
-                    status: 'operational',
-                    description: 'Activo',
-                    responseTime: performance.now()
-                };
-            } else if (!response.ok) {
-                return {
-                    name: service.name,
-                    status: 'major',
-                    description: `HTTP ${response.status}`,
-                    responseTime: performance.now()
-                };
-            } else {
-                // Respuesta vacía del proxy - intentar con otro proxy
-                if (service.useProxy && service.originalUrl) {
-                    // Intentar con el siguiente proxy
-                    const proxyIndex = corsProxies.findIndex(p => targetUrl.includes(p));
-                    if (proxyIndex < corsProxies.length - 1) {
-                        const nextProxy = corsProxies[proxyIndex + 1];
-                        const nextUrl = nextProxy + encodeURIComponent(service.originalUrl);
-                        
-                        try {
-                            const retryResponse = await fetch(nextUrl, {
-                                signal: AbortSignal.timeout(10000),
-                                mode: 'cors'
-                            });
-                            const retryText = await retryResponse.text();
-                            
-                            if (retryResponse.ok && retryText.length > 0) {
-                                return {
-                                    name: service.name,
-                                    status: 'operational',
-                                    description: 'Activo',
-                                    responseTime: performance.now()
-                                };
-                            }
-                        } catch (retryError) {
-                            // Continuar con error original
-                        }
-                    }
-                }
-                
-                return {
-                    name: service.name,
-                    status: 'minor',
-                    description: 'No se pudo verificar (todos los proxies fallaron)',
-                    responseTime: performance.now()
-                };
-            }
+        if (data.success) {
+            return data.services;
+        } else {
+            throw new Error(data.error || 'Error al obtener estado');
         }
     } catch (error) {
-        return {
-            name: service.name,
-            status: 'error',
-            description: `Error: ${error.message}`,
-            responseTime: performance.now()
-        };
+        console.error('Error fetching services:', error);
+        throw error;
     }
 }
 
@@ -264,19 +78,28 @@ async function updateServices() {
     grid.classList.add('loading');
     refreshBtn.disabled = true;
 
-    const promises = services.map(service => checkService(service));
-    const results = await Promise.all(promises);
+    try {
+        const services = await fetchServicesStatus();
+        
+        grid.innerHTML = '';
+        services.forEach((service, index) => {
+            const card = createServiceCard(service, index);
+            grid.appendChild(card);
+        });
 
-    grid.innerHTML = '';
-    results.forEach((service, index) => {
-        const card = createServiceCard(service, index);
-        grid.appendChild(card);
-    });
+        updateLastUpdateTime();
+    } catch (error) {
+        grid.innerHTML = `
+            <div class="service-card" style="grid-column: 1 / -1; text-align: center;">
+                <h3 class="service-name">Error al cargar servicios</h3>
+                <p class="service-description">${error.message}</p>
+                <p class="service-description">Intenta recargar la página</p>
+            </div>
+        `;
+    }
 
     grid.classList.remove('loading');
     refreshBtn.disabled = false;
-
-    updateLastUpdateTime();
 }
 
 function updateLastUpdateTime() {
@@ -335,14 +158,9 @@ function createStars() {
         const star = document.createElement('div');
         star.className = 'star';
         
-        // Posición aleatoria
         const x = Math.random() * 100;
         const y = Math.random() * 100;
-        
-        // Tamaño aleatorio
         const size = Math.random() * 3 + 1;
-        
-        // Duración de animación aleatoria
         const duration = Math.random() * 3 + 2;
         const delay = Math.random() * 3;
         
