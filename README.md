@@ -118,13 +118,19 @@ Para dominio personalizado:
 
 ## Solución de problemas
 
-### Problemas de CORS
+### Problemas de CORS y Error 403
 
-Si algunas APIs no responden debido a restricciones de CORS, puedes:
+Skinsback y CoinPaid pueden mostrar errores 403 porque bloquean peticiones desde proxies públicos. La solución es usar un Cloudflare Worker como proxy personalizado.
 
-1. Usar un proxy CORS
-2. Configurar Cloudflare Workers como proxy
-3. Usar una API de backend en lugar de consultar directamente desde el cliente
+**Instrucciones detalladas**: Ver `WORKER_SETUP.md`
+
+**Resumen rápido**:
+1. Instalar Wrangler: `npm install -g wrangler`
+2. Iniciar sesión: `wrangler login`
+3. Desplegar Worker: `wrangler deploy worker.js`
+4. Copiar la URL del Worker
+5. Actualizar `script.js` con la URL del Worker
+6. Subir cambios a GitHub
 
 ### Auto-refresh no funciona
 

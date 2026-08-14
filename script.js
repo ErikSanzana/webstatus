@@ -1,3 +1,8 @@
+// Configuración del proxy
+// Después de desplegar el Cloudflare Worker, reemplaza esta URL con la URL de tu Worker
+// Por ejemplo: const PROXY_URL = 'https://payment-proxy.tu-usuario.workers.dev?url=';
+const PROXY_URL = 'https://corsproxy.io/?'; // Proxy temporal (puede tener limitaciones)
+
 const services = [
     {
         name: 'AstroPay',
@@ -26,13 +31,15 @@ const services = [
     },
     {
         name: 'Skinsback',
-        url: 'https://corsproxy.io/?' + encodeURIComponent('https://skinsback.com'),
-        type: 'http'
+        url: PROXY_URL + encodeURIComponent('https://skinsback.com'),
+        type: 'http',
+        useProxy: true
     },
     {
         name: 'CoinPaid',
-        url: 'https://corsproxy.io/?' + encodeURIComponent('https://app.cryptoprocessing.com/api/v2/ping'),
-        type: 'http'
+        url: PROXY_URL + encodeURIComponent('https://app.cryptoprocessing.com/api/v2/ping'),
+        type: 'http',
+        useProxy: true
     }
 ];
 

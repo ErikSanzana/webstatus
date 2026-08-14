@@ -36,3 +36,6 @@ build/
 # Archivos de backup
 *.bak
 *.backup
+
+# Configuración local (no subir URLs de Workers personales)
+config.js
