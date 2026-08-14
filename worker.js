@@ -57,18 +57,6 @@ export default {
           name: 'MercadoPago',
           url: 'https://mercadopago.statuspage.io/api/v2/status.json',
           type: 'statuspage'
-        },
-        {
-          name: 'Skinsback',
-          originalUrl: 'https://skinsback.com',
-          type: 'http',
-          useProxy: true
-        },
-        {
-          name: 'CoinPaid',
-          originalUrl: 'https://app.cryptoprocessing.com/api/v2/ping',
-          type: 'http',
-          useProxy: true
         }
       ];
 
@@ -127,9 +115,20 @@ export default {
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 15000);
 
+          // Headers para simular navegador real
+          const headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1'
+          };
+
           const response = await fetch(targetUrl, {
             signal: controller.signal,
-            mode: 'cors'
+            mode: 'cors',
+            headers: headers
           });
           clearTimeout(timeoutId);
 
@@ -196,7 +195,15 @@ export default {
                   try {
                     const retryResponse = await fetch(nextUrl, {
                       signal: AbortSignal.timeout(10000),
-                      mode: 'cors'
+                      mode: 'cors',
+                      headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                        'Accept-Language': 'en-US,en;q=0.5',
+                        'Accept-Encoding': 'gzip, deflate, br',
+                        'Connection': 'keep-alive',
+                        'Upgrade-Insecure-Requests': '1'
+                      }
                     });
                     const retryText = await retryResponse.text();
                     
