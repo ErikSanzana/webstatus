@@ -26,12 +26,12 @@ const services = [
     },
     {
         name: 'Skinsback',
-        url: 'https://skinsback.com',
+        url: 'https://corsproxy.io/?' + encodeURIComponent('https://skinsback.com'),
         type: 'http'
     },
     {
         name: 'CoinPaid',
-        url: 'https://app.cryptoprocessing.com/api/v2/ping',
+        url: 'https://corsproxy.io/?' + encodeURIComponent('https://app.cryptoprocessing.com/api/v2/ping'),
         type: 'http'
     }
 ];
@@ -60,7 +60,7 @@ const statusLabels = {
 async function checkService(service) {
     try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
 
         const response = await fetch(service.url, {
             signal: controller.signal,
@@ -110,18 +110,30 @@ async function checkService(service) {
                 responseTime: performance.now()
             };
         } else if (service.type === 'http') {
-            if (response.ok) {
+            // Para servicios que usan proxy CORS, verificamos el contenido de la respuesta
+            const text = await response.text();
+            
+            // Si el proxy funciona pero el servicio original falla
+            if (response.ok && text.length > 0) {
                 return {
                     name: service.name,
                     status: 'operational',
                     description: 'Activo',
                     responseTime: performance.now()
                 };
-            } else {
+            } else if (!response.ok) {
                 return {
                     name: service.name,
                     status: 'major',
                     description: `HTTP ${response.status}`,
+                    responseTime: performance.now()
+                };
+            } else {
+                // Respuesta vacía del proxy
+                return {
+                    name: service.name,
+                    status: 'minor',
+                    description: 'No se pudo verificar (posible bloqueo del proxy)',
                     responseTime: performance.now()
                 };
             }
