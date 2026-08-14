@@ -313,7 +313,41 @@ function setupRefreshButton() {
     refreshBtn.addEventListener('click', updateServices);
 }
 
+// Crear estrellas animadas aleatorias
+function createStars() {
+    const starsContainer = document.getElementById('starsLarge');
+    if (!starsContainer) return;
+
+    const numberOfStars = 50;
+    
+    for (let i = 0; i < numberOfStars; i++) {
+        const star = document.createElement('div');
+        star.className = 'star';
+        
+        // Posición aleatoria
+        const x = Math.random() * 100;
+        const y = Math.random() * 100;
+        
+        // Tamaño aleatorio
+        const size = Math.random() * 3 + 1;
+        
+        // Duración de animación aleatoria
+        const duration = Math.random() * 3 + 2;
+        const delay = Math.random() * 3;
+        
+        star.style.left = `${x}%`;
+        star.style.top = `${y}%`;
+        star.style.width = `${size}px`;
+        star.style.height = `${size}px`;
+        star.style.animationDuration = `${duration}s`;
+        star.style.animationDelay = `${delay}s`;
+        
+        starsContainer.appendChild(star);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+    createStars();
     updateServices();
     setupRefreshButton();
     setupAutoRefresh();
