@@ -1,7 +1,30 @@
-// Configuración del proxy
-// Después de desplegar el Cloudflare Worker, reemplaza esta URL con la URL de tu Worker
-// Por ejemplo: const PROXY_URL = 'https://payment-proxy.tu-usuario.workers.dev?url=';
-const PROXY_URL = 'https://corsproxy.io/?'; // Proxy temporal (puede tener limitaciones)
+// Lista de proxies CORS para probar automáticamente
+const corsProxies = [
+    'https://corsproxy.io/?',
+    'https://api.allorigins.win/raw?url=',
+    'https://cors-anywhere.herokuapp.com/',
+    'https://thingproxy.freeboard.io/fetch/'
+];
+
+// Función para probar proxies automáticamente
+async function getWorkingProxy(targetUrl) {
+    for (const proxy of corsProxies) {
+        try {
+            const proxyUrl = proxy + encodeURIComponent(targetUrl);
+            const response = await fetch(proxyUrl, { 
+                method: 'HEAD',
+                signal: AbortSignal.timeout(5000)
+            });
+            
+            if (response.ok || response.status === 200) {
+                return proxy;
+            }
+        } catch (e) {
+            continue; // Probar siguiente proxy
+        }
+    }
+    return corsProxies[0]; // Fallback al primer proxy
+}
 
 const services = [
     {
@@ -31,13 +54,13 @@ const services = [
     },
     {
         name: 'Skinsback',
-        url: PROXY_URL + encodeURIComponent('https://skinsback.com'),
+        originalUrl: 'https://skinsback.com',
         type: 'http',
         useProxy: true
     },
     {
         name: 'CoinPaid',
-        url: PROXY_URL + encodeURIComponent('https://app.cryptoprocessing.com/api/v2/ping'),
+        originalUrl: 'https://app.cryptoprocessing.com/api/v2/ping',
         type: 'http',
         useProxy: true
     }
@@ -66,10 +89,18 @@ const statusLabels = {
 
 async function checkService(service) {
     try {
+        let targetUrl = service.url;
+        
+        // Si el servicio necesita proxy, obtener uno que funcione
+        if (service.useProxy && service.originalUrl) {
+            const workingProxy = await getWorkingProxy(service.originalUrl);
+            targetUrl = workingProxy + encodeURIComponent(service.originalUrl);
+        }
+
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-        const response = await fetch(service.url, {
+        const response = await fetch(targetUrl, {
             signal: controller.signal,
             mode: 'cors'
         });
@@ -136,11 +167,39 @@ async function checkService(service) {
                     responseTime: performance.now()
                 };
             } else {
-                // Respuesta vacía del proxy
+                // Respuesta vacía del proxy - intentar con otro proxy
+                if (service.useProxy && service.originalUrl) {
+                    // Intentar con el siguiente proxy
+                    const proxyIndex = corsProxies.findIndex(p => targetUrl.includes(p));
+                    if (proxyIndex < corsProxies.length - 1) {
+                        const nextProxy = corsProxies[proxyIndex + 1];
+                        const nextUrl = nextProxy + encodeURIComponent(service.originalUrl);
+                        
+                        try {
+                            const retryResponse = await fetch(nextUrl, {
+                                signal: AbortSignal.timeout(10000),
+                                mode: 'cors'
+                            });
+                            const retryText = await retryResponse.text();
+                            
+                            if (retryResponse.ok && retryText.length > 0) {
+                                return {
+                                    name: service.name,
+                                    status: 'operational',
+                                    description: 'Activo',
+                                    responseTime: performance.now()
+                                };
+                            }
+                        } catch (retryError) {
+                            // Continuar con error original
+                        }
+                    }
+                }
+                
                 return {
                     name: service.name,
                     status: 'minor',
-                    description: 'No se pudo verificar (posible bloqueo del proxy)',
+                    description: 'No se pudo verificar (todos los proxies fallaron)',
                     responseTime: performance.now()
                 };
             }
