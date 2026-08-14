@@ -1,3 +1,14 @@
+/**
+ * Copyright (c) 2024 Erik Sanzana
+ * Email: ersanzana@gmail.com
+ * 
+ * Monitoreo de Pasarelas de Pago
+ * Todos los derechos reservados
+ * 
+ * Prohibida la copia, distribución o modificación
+ * sin autorización escrita del autor.
+ */
+
 // Lista de proxies CORS para probar automáticamente
 const corsProxies = [
     'https://corsproxy.io/?',
