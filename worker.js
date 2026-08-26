@@ -107,6 +107,26 @@ export default {
         error: 'Error'
       };
 
+      // Traducciones de descripciones comunes
+      const translationMap = {
+        'All Systems Operational': 'Todos los sistemas operativos',
+        'Service Under Maintenance': 'Servicio en mantenimiento',
+        'Partial System Outage': 'Interrupción parcial del sistema',
+        'Major System Outage': 'Interrupción mayor del sistema',
+        'Degraded Performance': 'Rendimiento degradado',
+        'Service Degraded': 'Servicio degradado',
+        'Operational': 'Operativo',
+        'Maintenance': 'Mantenimiento',
+        'Minor Issues': 'Problemas menores',
+        'Major Issues': 'Problemas mayores'
+      };
+
+      // Función para traducir descripciones
+      function translateDescription(description) {
+        if (!description) return 'Estado desconocido';
+        return translationMap[description] || description;
+      }
+
       // Función para verificar servicios (protegida)
       async function checkService(service) {
         try {
@@ -145,7 +165,7 @@ export default {
             return {
               name: service.name,
               status: statusMap[indicator] || 'error',
-              description: description || 'Estado desconocido'
+              description: translateDescription(description)
             };
           } else if (service.type === 'components') {
             const data = await response.json();
@@ -192,10 +212,17 @@ export default {
               };
             }
 
-            const statuses = chileComponents.map(comp => ({
-              name: comp.name,
-              status: statusMap[comp.status] || 'error'
-            }));
+            const statuses = chileComponents.map(comp => {
+              // Limpiar el nombre del componente para mostrarlo mejor
+              let cleanName = comp.name;
+              // Eliminar "- Chile" del final del nombre si existe
+              cleanName = cleanName.replace(/ - Chile$/i, '');
+              
+              return {
+                name: cleanName,
+                status: statusMap[comp.status] || 'error'
+              };
+            });
 
             const overallStatus = statuses.some(s => s.status === 'critical') ? 'critical' :
                                   statuses.some(s => s.status === 'major') ? 'major' :
@@ -204,7 +231,7 @@ export default {
             return {
               name: service.name,
               status: overallStatus,
-              description: statuses.map(s => `${s.name}: ${statusLabels[s.status]}`).join(', '),
+              description: 'Servicios de ALPS en Chile',
               details: statuses
             };
           } else if (service.type === 'http') {

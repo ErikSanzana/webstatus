@@ -61,7 +61,7 @@ function createServiceCard(service, index) {
                 ${service.details.map(detail => `
                     <div class="service-detail-item">
                         <span class="status-indicator ${detail.status}" style="width: 8px; height: 8px;"></span>
-                        <span>${detail.name}: ${statusLabels[detail.status]}</span>
+                        <span>${detail.name}</span>
                     </div>
                 `).join('')}
             </div>
