@@ -7,14 +7,13 @@ Página web estilosa para visualizar el estado en tiempo real de pasarelas de pa
 - ✨ Diseño moderno con animaciones suaves
 - 🎨 Interfaz responsive y atractiva
 - 🔄 Auto-refresh cada 30 segundos (opcional)
-- 📊 Monitoreo de 7 pasarelas de pago:
+- 📊 Monitoreo de 6 pasarelas de pago:
   - AstroPay
   - Kushki
   - WebPay (Transbank)
   - MACH
   - MercadoPago
-  - Skinsback
-  - CoinPaid
+  - ALPS Chile
 - 🎯 Indicadores visuales de estado (operativo, problemas menores, mayores, crítico, mantenimiento)
 
 ## Archivos del Proyecto

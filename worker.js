@@ -57,6 +57,11 @@ export default {
           name: 'MercadoPago',
           url: 'https://mercadopago.statuspage.io/api/v2/status.json',
           type: 'statuspage'
+        },
+        {
+          name: 'ALPS Chile',
+          url: 'https://status.alps.cl/api/v2/components.json',
+          type: 'alps_chile'
         }
       ];
 
@@ -156,6 +161,38 @@ export default {
             }
 
             const statuses = webpayComponents.map(comp => ({
+              name: comp.name,
+              status: statusMap[comp.status] || 'error'
+            }));
+
+            const overallStatus = statuses.some(s => s.status === 'critical') ? 'critical' :
+                                  statuses.some(s => s.status === 'major') ? 'major' :
+                                  statuses.some(s => s.status === 'minor') ? 'minor' : 'operational';
+
+            return {
+              name: service.name,
+              status: overallStatus,
+              description: statuses.map(s => `${s.name}: ${statusLabels[s.status]}`).join(', '),
+              details: statuses
+            };
+          } else if (service.type === 'alps_chile') {
+            const data = await response.json();
+            const components = data.components || [];
+            
+            // Buscar solamente componentes relacionados con Chile
+            const chileComponents = components.filter(component => 
+              component.name && component.name.toLowerCase().includes('chile')
+            );
+            
+            if (chileComponents.length === 0) {
+              return {
+                name: service.name,
+                status: 'error',
+                description: 'No se encontraron servicios relacionados con Chile'
+              };
+            }
+
+            const statuses = chileComponents.map(comp => ({
               name: comp.name,
               status: statusMap[comp.status] || 'error'
             }));
