@@ -199,27 +199,24 @@ export default {
             const data = await response.json();
             const components = data.components || [];
             
-            // Buscar solamente componentes relacionados con Chile
-            const chileComponents = components.filter(component => 
-              component.name && component.name.toLowerCase().includes('chile')
+            // Filtrar solo componentes que son servicios reales de ALPS (no países ni grupos)
+            const alpsServices = components.filter(component => 
+              component.name && 
+              !component.group && // No grupos
+              (component.name.includes('ALPS') || component.name.includes('API') || component.name.includes('Dashboard'))
             );
             
-            if (chileComponents.length === 0) {
+            if (alpsServices.length === 0) {
               return {
                 name: service.name,
                 status: 'error',
-                description: 'No se encontraron servicios relacionados con Chile'
+                description: 'No se encontraron servicios de ALPS'
               };
             }
 
-            const statuses = chileComponents.map(comp => {
-              // Limpiar el nombre del componente para mostrarlo mejor
-              let cleanName = comp.name;
-              // Eliminar "- Chile" del final del nombre si existe
-              cleanName = cleanName.replace(/ - Chile$/i, '');
-              
+            const statuses = alpsServices.map(comp => {
               return {
-                name: cleanName,
+                name: comp.name,
                 status: statusMap[comp.status] || 'error'
               };
             });
