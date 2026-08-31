@@ -1,5 +1,4 @@
-name = "payment-status-worker"
-main = "worker.js"
+name = "webstatus"
 compatibility_date = "2024-01-01"
 
 [pages]
