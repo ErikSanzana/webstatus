@@ -23,6 +23,67 @@ export default {
     }
 
     try {
+      // Servir archivo ads.txt para verificación de AdSense
+      const url = new URL(request.url);
+      if (url.pathname === '/ads.txt') {
+        return new Response('google.com, pub-2681515589690503, DIRECT, f08c47fec0942fa0', {
+          headers: {
+            'Content-Type': 'text/plain',
+            'Cache-Control': 'public, max-age=3600'
+          }
+        });
+      }
+
+      // Tracker de buses - Red Regional / TransApp (Concepción)
+      if (url.pathname === '/api/buses') {
+        const ZONE_UUID = 'f083f24e-7fee-4fdc-9520-dbbdae877f07';
+        const BASE_URL = 'https://phone.dtpr.transapp.cl/v7/phone';
+        const transappHeaders = {
+          'Os-type': 'Android',
+          'App-Version': '2.5.1',
+          'Accept': 'application/json'
+        };
+
+        const routes = (url.searchParams.get('routes') || '')
+          .split(',').map(s => s.trim()).filter(Boolean).slice(0, 10);
+        const directions = (url.searchParams.get('directions') || 'I,R')
+          .split(',').map(s => s.trim().toUpperCase()).filter(d => d === 'I' || d === 'R');
+
+        if (routes.length === 0) {
+          return new Response(JSON.stringify({ buses: [], last_update: new Date().toLocaleTimeString('es-CL') }), {
+            headers: { 'Content-Type': 'application/json', ...corsHeaders }
+          });
+        }
+
+        const jobs = [];
+        for (const route of routes) {
+          for (const direction of (directions.length ? directions : ['I', 'R'])) {
+            jobs.push({ route, direction });
+          }
+        }
+
+        const results = await Promise.allSettled(jobs.map(async ({ route, direction }) => {
+          const apiUrl = `${BASE_URL}/${ZONE_UUID}/synoptic/machines?route=${encodeURIComponent(route)}&direction=${direction}`;
+          const res = await fetch(apiUrl, { headers: transappHeaders });
+          if (!res.ok) return [];
+          const data = await res.json();
+          return (data.machines || []).map(bus => ({ ...bus, route, direction }));
+        }));
+
+        const buses = results.flatMap(r => (r.status === 'fulfilled' ? r.value : []));
+
+        return new Response(JSON.stringify({
+          buses,
+          last_update: new Date().toLocaleTimeString('es-CL')
+        }), {
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-store',
+            ...corsHeaders
+          }
+        });
+      }
+
       // Lista de proxies CORS (solo el Worker los usa)
       const corsProxies = [
         'https://corsproxy.io/?',
